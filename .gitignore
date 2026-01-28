@@ -1,0 +1,17 @@
+﻿# Ignore Python virtual environments and caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore large / generated artifacts
+captures/
+wanted/
+*.log
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

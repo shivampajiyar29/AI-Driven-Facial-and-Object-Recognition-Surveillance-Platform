@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection System Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card.alert {
+            border-left-color: #e74c3c;
+            animation: pulse 2s infinite;
+        }
+
+        .stat-card.warning {
+            border-left-color: #f39c12;
+        }
+
+        .stat-card.success {
+            border-left-color: #27ae60;
+        }
+
+        .stat-card h3 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .subtext {
+            color: #95a5a6;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0% { background: rgba(255, 255, 255, 0.95); }
+            50% { background: rgba(231, 76, 60, 0.1); }
+            100% { background: rgba(255, 255, 255, 0.95); }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+        }
+
+        .chart-container, .detections-container, .controls-container, .status-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .detection-item {
+            background: rgba(255, 255, 255, 0.8);
+            margin: 12px 0;
+            padding: 18px;
+            border-radius: 12px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .detection-item:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateX(5px);
+        }
+
+        .detection-item.alert {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .detection-item.warning {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .detection-item strong {
+            color: #2c3e50;
+            font-size: 1.1rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .detection-item small {
+            color: #7f8c8d;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        button {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.success {
+            background: #27ae60;
+        }
+
+        button.success:hover {
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        button.warning {
+            background: #f39c12;
+        }
+
+        button.warning:hover {
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+        }
+
+        button.danger {
+            background: #e74c3c;
+        }
+
+        button.danger:hover {
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-active {
+            background: #27ae60;
+        }
+
+        .status-inactive {
+            background: #e74c3c;
+        }
+
+        .status-warning {
+            background: #f39c12;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        .last-update {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .toggle-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-btn {
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🚀 Smart Face Detection System</h1>
+            <p>Real-time monitoring and security alerts</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card alert" id="alertsCard">
+                <h3>🚨 ACTIVE ALERTS</h3>
+                <div class="value" id="activeAlerts">0</div>
+                <div class="subtext">Wanted persons detected</div>
+            </div>
+            <div class="stat-card">
+                <h3>👤 WANTED DETECTIONS</h3>
+                <div class="value" id="wantedDetections">0</div>
+                <div class="subtext">Today's wanted matches</div>
+            </div>
+            <div class="stat-card">
+                <h3>📦 OBJECT DETECTIONS</h3>
+                <div class="value" id="objectDetections">0</div>
+                <div class="subtext">Objects identified</div>
+            </div>
+            <div class="stat-card success">
+                <h3>⚙️ SYSTEM STATUS</h3>
+                <div class="value" id="systemStatus">ACTIVE</div>
+                <div class="subtext" id="systemSubtext">All systems operational</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="left-column">
+                <div class="chart-container">
+                    <h2>📊 Detection Analytics</h2>
+                    <div style="height: 300px;">
+                        <canvas id="detectionChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="detections-container">
+                    <h2>🔍 Recent Detections</h2>
+                    <div id="detectionsList">
+                        <div class="detection-item">
+                            <strong>Loading detections...</strong>
+                            <small>Please wait while we fetch the latest data</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-column">
+                <div class="controls-container">
+                    <h2>🎮 System Controls</h2>
+                    
+                    <div class="toggle-buttons">
+                        <button class="toggle-btn warning" onclick="toggleFeature('face_detection')">
+                            <span id="faceIcon">👁️</span>
+                            <span id="faceText">Face Detection: ON</span>
+                        </button>
+                        <button class="toggle-btn warning" onclick="toggleFeature('object_detection')">
+                            <span id="objectIcon">📦</span>
+                            <span id="objectText">Object Detection: ON</span>
+                        </button>
+                        <button class="toggle-btn warning" onclick="toggleFeature('alarm')">
+                            <span id="alarmIcon">🔊</span>
+                            <span id="alarmText">Alarm: ON</span>
+                        </button>
+                        <button class="toggle-btn success" onclick="controlSystem('start_system')">
+                            <span id="systemIcon">🟢</span>
+                            <span id="systemText">System: RUNNING</span>
+                        </button>
+                    </div>
+
+                    <div class="controls">
+                        <button class="success" onclick="controlSystem('capture_snapshot')">
+                            📸 Capture Manual Snapshot
+                        </button>
+                        <button class="warning" onclick="controlSystem('silence_alarm')">
+                            🔕 Silence Alarm (10 min)
+                        </button>
+                        <button onclick="exportData()">
+                            📁 Export Detection Data
+                        </button>
+                        <button class="danger" onclick="controlSystem('emergency_stop')">
+                            🛑 Emergency Stop
+                        </button>
+                    </div>
+                </div>
+
+                <div class="status-container">
+                    <h2>📈 System Information</h2>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div>MongoDB</div>
+                            <div><span id="mongoStatus" class="status-indicator status-active"></span> <span id="mongoText">Connected</span></div>
+                        </div>
+                        <div class="status-item">
+                            <div>Camera</div>
+                            <div><span id="cameraStatus" class="status-indicator status-active"></span> <span id="cameraText">Connected</span></div>
+                        </div>
+                        <div class="status-item">
+                            <div>Face Detection</div>
+                            <div><span id="faceStatus" class="status-indicator status-active"></span> <span id="faceStatusText">Active</span></div>
+                        </div>
+                        <div class="status-item">
+                            <div>Object Detection</div>
+                            <div><span id="objectStatus" class="status-indicator status-active"></span> <span id="objectStatusText">Active</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="last-update">
+                        Last update: <span id="lastUpdate">Just now</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize charts
+        const ctx = document.getElementById('detectionChart').getContext('2d');
+        const detectionChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Wanted Detections',
+                    data: [],
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Object Detections',
+                    data: [],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Update dashboard data
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Error fetching stats:', data.error);
+                    updateStatusIndicators(false);
+                    return;
+                }
+
+                // Update stats cards
+                document.getElementById('activeAlerts').textContent = data.activeAlerts;
+                document.getElementById('wantedDetections').textContent = data.wantedDetections;
+                document.getElementById('objectDetections').textContent = data.objectDetections;
+                document.getElementById('systemStatus').textContent = data.systemStatus.toUpperCase();
+                document.getElementById('lastUpdate').textContent = data.lastUpdate;
+
+                // Update system status
+                updateSystemStatus(data);
+
+                // Update detections list
+                updateDetectionsList(data.recentDetections);
+
+                // Update alerts card appearance
+                const alertsCard = document.getElementById('alertsCard');
+                if (data.activeAlerts > 0) {
+                    alertsCard.classList.add('alert');
+                } else {
+                    alertsCard.classList.remove('alert');
+                }
+
+                updateStatusIndicators(true);
+
+            } catch (error) {
+                console.error('Failed to update dashboard:', error);
+                updateStatusIndicators(false);
+            }
+        }
+
+        // Update status indicators
+        function updateStatusIndicators(connected) {
+            const status = connected ? 'status-active' : 'status-inactive';
+            const text = connected ? 'Connected' : 'Disconnected';
+            
+            document.getElementById('mongoStatus').className = 'status-indicator ' + status;
+            document.getElementById('mongoText').textContent = text;
+            document.getElementById('cameraStatus').className = 'status-indicator ' + status;
+            document.getElementById('cameraText').textContent = text;
+        }
+
+        // Update system status indicators
+        function updateSystemStatus(data) {
+            // Feature toggles
+            document.getElementById('faceText').textContent = `Face Detection: ${data.faceDetection ? 'ON' : 'OFF'}`;
+            document.getElementById('objectText').textContent = `Object Detection: ${data.objectDetection ? 'ON' : 'OFF'}`;
+            document.getElementById('alarmText').textContent = `Alarm: ${data.alarmEnabled ? 'ON' : 'OFF'}`;
+            document.getElementById('systemText').textContent = `System: ${data.systemStatus.toUpperCase()}`;
+            
+            // Update status indicators
+            const faceStatus = data.faceDetection ? 'status-active' : 'status-inactive';
+            const objectStatus = data.objectDetection ? 'status-active' : 'status-inactive';
+            
+            document.getElementById('faceStatus').className = 'status-indicator ' + faceStatus;
+            document.getElementById('faceStatusText').textContent = data.faceDetection ? 'Active' : 'Inactive';
+            document.getElementById('objectStatus').className = 'status-indicator ' + objectStatus;
+            document.getElementById('objectStatusText').textContent = data.objectDetection ? 'Active' : 'Inactive';
+        }
+
+        // Update detections list
+        function updateDetectionsList(detections) {
+            const container = document.getElementById('detectionsList');
+            if (!detections || detections.length === 0) {
+                container.innerHTML = '<div class="detection-item"><strong>No recent detections</strong><small>Waiting for activity...</small></div>';
+                return;
+            }
+
+            container.innerHTML = detections.map(detection => `
+                <div class="detection-item ${detection.alert ? 'alert' : ''}">
+                    <strong>${detection.name}</strong>
+                    <small>${detection.timestamp} - ${detection.alert ? '🚨 ALERT TRIGGERED' : 'Detected'}</small>
+                </div>
+            `).join('');
+        }
+
+        // System control functions
+        async function controlSystem(command) {
+            if (command === 'emergency_stop' && !confirm('Are you sure you want to emergency stop the system?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/system/control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ command: command })
+                });
+
+                const result = await response.json();
+                alert(result.message);
+                
+                // Refresh dashboard to show updated status
+                updateDashboard();
+            } catch (error) {
+                console.error('Control command failed:', error);
+                alert('Failed to execute command: ' + error.message);
+            }
+        }
+
+        // Toggle features
+        async function toggleFeature(feature) {
+            const command = `toggle_${feature}`;
+            await controlSystem(command);
+        }
+
+        // Export data function
+        function exportData() {
+            alert('Export feature would download detection data as CSV');
+            // Implement CSV export functionality here
+        }
+
+        // Update chart data
+        async function updateChart() {
+            try {
+                const response = await fetch('/api/detections/hourly');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error('Error fetching chart data:', data.error);
+                    return;
+                }
+                
+                detectionChart.data.labels = data.hours;
+                detectionChart.data.datasets[0].data = data.wanted;
+                detectionChart.data.datasets[1].data = data.objects;
+                detectionChart.update();
+            } catch (error) {
+                console.error('Failed to update chart:', error);
+            }
+        }
+
+        // Initialize and update periodically
+        updateDashboard();
+        updateChart();
+        
+        // Update every 3 seconds
+        setInterval(updateDashboard, 3000);
+        // Update chart every 30 seconds
+        setInterval(updateChart, 30000);
+    </script>
+</body>
+</html>

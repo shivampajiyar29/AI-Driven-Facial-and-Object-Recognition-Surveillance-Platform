@@ -1,0 +1,9 @@
+{
+  "systemStatus": "running",
+  "faceDetection": true,
+  "objectDetection": true,
+  "alarmEnabled": false,
+  "silenceUntil": 0.0,
+  "lastCommand": "start_system",
+  "lastCommandAt": 1764095348.6896977
+}
